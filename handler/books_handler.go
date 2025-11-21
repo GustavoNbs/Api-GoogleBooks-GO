@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 )
@@ -20,8 +21,13 @@ type DadosDoLivro struct {
 }
 
 func HandleSearch(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Println("Recebi uma requisição de busca de livros!")
+
+	// Pega o parâmetro "nome" da URL
 	nomePraPesquisar := r.URL.Query().Get("nome")
 
+	// Valida se o parâmetro foi enviado
 	if nomePraPesquisar == "" {
 		http.Error(w, "Ei, você esqueceu de mandar o parametro 'nome' na URL!", 400)
 		return
@@ -37,6 +43,7 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 	// Retorna o resultado
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(livros)
+
 }
 
 func buscarNoGoogle(nome string) ([]interface{}, error) {
