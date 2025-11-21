@@ -35,11 +35,9 @@ O sistema funciona como um "proxy": ele recebe sua requisição, valida o parâm
 2. **Baixe as dependências** (caso necessário):
 
    ```bash
+   go mod tidy
    ```
-
-go mod tidy
-
-````
+   
 3. **Inicie o servidor:**
 ```bash
 go run main.go
