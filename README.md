@@ -1,25 +1,30 @@
-# API de Busca de Livros (Go + Google Books)
+# API de Busca de Livros e Gestão de Usuários (Go + Google Books)
 
-Este projeto é uma API desenvolvida em **Go (Golang)** que permite pesquisar livros diretamente na API do Google Books através de um termo enviado pelo usuário.
+Este projeto é uma API desenvolvida em **Go (Golang)** que possui duas funcionalidades principais:
 
-O sistema funciona como um "proxy": ele recebe sua requisição, valida o parâmetro de busca, consulta o Google Books e retorna os resultados formatados para JSON.
+1. Pesquisar livros diretamente na API do Google Books.  
+2. Gerir um cadastro de usuários (CRUD) com validação de CPF.
+
+O sistema funciona como um "proxy" para livros e possui um banco de dados em memória para os usuários.
 
 ---
 
 ## Integrantes do Grupo
 
-* **Nome do Aluno 1:** [Gustavo Biscoto Nebes]
-* **Nome do Aluno 2:** [Davi Almeida Resende]
-* **Nome do Aluno 3:** [Leonardo Sena Machado Durães]
-
+* **Nome do Aluno 1:** Gustavo Biscoto Nebes  
+* **Nome do Aluno 2:** Davi Almeida Resende  
+* **Nome do Aluno 3:** Leonardo Sena Machado Durães
 
 ---
 
 ## Tecnologias e APIs
 
-* **Linguagem:** Go (Golang)
-* **Roteamento:** Gorilla Mux
-* **API Externa:** [Google Books API](https://developers.google.com/books)
+| Componente       | Utilizado |
+|------------------|-----------|
+| Linguagem        | Go (Golang) |
+| Roteamento       | Gorilla Mux |
+| API Externa      | Google Books API |
+| Arquitetura      | MVC (Model, View/Handler, Controller, Repository) |
 
 ---
 
@@ -27,7 +32,10 @@ O sistema funciona como um "proxy": ele recebe sua requisição, valida o parâm
 
 ### Pré-requisitos
 
-* Ter a linguagem [Go (Golang)](https://go.dev/dl/) instalada na máquina.
+* Ter a linguagem **Go (Golang)** instalada na máquina.  
+  Download: https://go.dev/dl/
+
+---
 
 ### Passo a Passo
 
@@ -37,75 +45,127 @@ O sistema funciona como um "proxy": ele recebe sua requisição, valida o parâm
    ```bash
    go mod tidy
    ```
-   
-3. **Inicie o servidor:**
-```bash
-go run main.go
-````
 
-Você verá a mensagem no terminal: `Servidor ouvindo em :8080 ...`
+3. **Inicie o servidor:**
+
+   ```bash
+   go run main.go
+   ```
+
+Você verá a mensagem:  
+**Servidor ouvindo em :8080 ...**
 
 ---
 
-##  Como Testar
+## Como Testar – Busca de Livros
 
-A rota principal da aplicação é: `GET /books/search`
+**Rota:** `GET /books/search`  
+É obrigatório passar o parâmetro `nome`.
 
- **Importante:** Você deve obrigatoriamente passar o parâmetro **nome** na URL para que a busca aconteça.
-
-### 1. Pelo Navegador
-
-Basta acessar o link abaixo (você pode alterar o nome do livro no final):
+**Exemplo no navegador:**
 
 ```
 http://localhost:8080/books/search?nome=Dom Quixote
 ```
 
-### 2. Pelo Postman / Insomnia
+---
 
-1. Crie uma requisição do tipo **GET**.
-2. Insira a URL:
+## Como Testar o CRUD de Usuários
 
-```
-http://localhost:8080/books/search
-```
-
-3. Adicione o Parâmetro de consulta (Query Param):
-
-   * **Chave (Key):** nome
-   * **Valor (Value):** Clean Code (ou o livro que desejar).
-4. Clique em **Send**.
+A API permite **Criar, Listar, Atualizar e Deletar usuários**, com validação de CPF matematicamente correta.
 
 ---
 
-## Exemplos de Resposta
+### 1. Criar Usuário – POST
 
-### Sucesso (200 OK):
+**URL:**
+
+```
+http://localhost:8080/users
+```
+
+**Body (JSON):**
+
+```json
+{
+    "name": "Maria Silva",
+    "email": "maria@email.com",
+    "cpf": "52998224725"
+}
+```
+
+*Use um CPF válido — CPFs inválidos retornam **400 Bad Request***.
+
+---
+
+### 2. Listar Usuários – GET
+
+**URL:**
+
+```
+http://localhost:8080/users
+```
+
+**Resposta esperada:**
 
 ```json
 [
     {
-        "title": "Harry Potter e a Ordem da Fénix",
-        "authors": ["J. K. Rowling"],
-        "description": "Este tem sido um Verão ainda mais insuportavel que o costume...",
-        "pageCount": 750
+        "id": "1",
+        "name": "Maria Silva",
+        "email": "maria@email.com",
+        "cpf": "52998224725"
     }
 ]
 ```
 
-### Erro - Falta de parâmetro (400 Bad Request):
+---
+
+### 3. Atualizar Usuário – PUT
+
+Substitua `{id}` (ex: 1)  
 
 ```
-Ei, você esqueceu de mandar o parametro 'nome' na URL!
+http://localhost:8080/users/{id}
 ```
+
+**Body (JSON):**
+
+```json
+{
+    "name": "Maria Silva Atualizada",
+    "email": "maria.novo@email.com",
+    "cpf": "52998224725"
+}
+```
+
+---
+
+### 4. Deletar Usuário – DELETE
+
+```
+http://localhost:8080/users/{id}
+```
+
+**Resposta:** Status `204 No Content`
+
+---
+
+## Códigos de Erro Comuns
+
+| Código | Significado |
+|--------|-------------|
+| **400 Bad Request** | Parâmetros faltando ou CPF inválido |
+| **404 Not Found** | Usuário não encontrado ao atualizar/deletar |
+| **500 Internal Server Error** | Falha ao conectar na API externa |
 
 ---
 
 ## Configuração de Porta
 
-O servidor roda por padrão na porta **:8080**. Se precisar alterar:
+O servidor roda em `:8080` por padrão. Para alterar:
 
-1. Abra o arquivo `main.go`.
-2. Localize a constante `addr`.
-3. Altere o valor (ex: `":"3000"`).
-4. Reinicie o servidor.
+1. Abra `main.go`  
+2. Localize a constante `addr`  
+3. Altere o valor (ex: `":3000"`)  
+4. Reinicie o servidor
