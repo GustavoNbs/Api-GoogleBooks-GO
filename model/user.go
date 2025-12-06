@@ -1,62 +1,56 @@
 package model
 
 import (
-	"strconv"
+	"Api-Aula1/utils"
+	"errors"
 	"strings"
+
+	"github.com/badoux/checkmail"
 )
 
 type User struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-	CPF   string `json:"cpf"`
+	ID       uint64 `json:"id,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Email    string `json:"email,omitempty"`
+	CPF      string `json:"cpf,omitempty"`
+	Password string `json:"password,omitempty"`
 }
 
-func (u *User) ValidateCPF() bool {
-	cpf := strings.ReplaceAll(strings.ReplaceAll(u.CPF, ".", ""), "-", "")
+func (u *User) Prepare(step string) error {
+	if err := u.validate(step); err != nil {
+		return err
+	}
+	if err := u.format(step); err != nil {
+		return err
+	}
+	return nil
+}
 
-	if len(cpf) != 11 {
-		return false
+func (u *User) validate(step string) error {
+	if u.Name == "" {
+		return errors.New("o nome é obrigatório e não pode estar em branco")
 	}
+	if u.Email == "" {
+		return errors.New("o e-mail é obrigatório e não pode estar em branco")
+	}
+	if err := checkmail.ValidateFormat(u.Email); err != nil {
+		return errors.New("o e-mail inserido é inválido")
+	}
+	if err := utils.CPFValidator(u.CPF); err != nil {
+		return err
+	}
+	if step == "create" && u.Password == "" {
+		return errors.New("a senha é obrigatória")
+	}
+	return nil
+}
 
-	allEqual := true
-	for i := 1; i < 11; i++ {
-		if cpf[i] != cpf[0] {
-			allEqual = false
-			break
-		}
-	}
-	if allEqual {
-		return false
-	}
+func (u *User) format(step string) error {
+	u.Name = strings.TrimSpace(u.Name)
+	u.Email = strings.TrimSpace(u.Email)
+	u.CPF = strings.TrimSpace(u.CPF)
 
-	sum := 0
-	for i := 0; i < 9; i++ {
-		digit, _ := strconv.Atoi(string(cpf[i]))
-		sum += digit * (10 - i)
-	}
-	remainder := sum % 11
-	digit1 := 0
-	if remainder >= 2 {
-		digit1 = 11 - remainder
-	}
+	u.Name = strings.ToLower(u.Name)
 
-	currentDigit, _ := strconv.Atoi(string(cpf[9]))
-	if currentDigit != digit1 {
-		return false
-	}
-
-	sum = 0
-	for i := 0; i < 10; i++ {
-		digit, _ := strconv.Atoi(string(cpf[i]))
-		sum += digit * (11 - i)
-	}
-	remainder = sum % 11
-	digit2 := 0
-	if remainder >= 2 {
-		digit2 = 11 - remainder
-	}
-
-	currentDigit, _ = strconv.Atoi(string(cpf[10]))
-	return currentDigit == digit2
+	return nil
 }
