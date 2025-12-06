@@ -1,35 +1,50 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"strconv"
+	"path/filepath"
+	"runtime"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 )
 
 var (
-	StringConexaoBanco = ""
-	Porta              = 0
+	Port      string
+	Cfg       mysql.Config
+	SecretKey []byte
 )
 
 func LoadEnv() {
 	var erro error
-
-	if erro = godotenv.Load(); erro != nil {
-		log.Fatal("Erro ao carregar o arquivo .env")
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		log.Fatal("Não foi possível obter o caminho do arquivo de configuração")
 	}
 
-	Porta, erro = strconv.Atoi(os.Getenv("API_PORT"))
-	if erro != nil {
-		Porta = 8080 // porta padrão
+	configDir := filepath.Dir(filename)
+	envPath := filepath.Join(configDir, ".env")
+
+	if erro = godotenv.Load(envPath); erro != nil {
+		baseDir := filepath.Dir(configDir)
+		envPathRoot := filepath.Join(baseDir, ".env")
+		if erro = godotenv.Load(envPathRoot); erro != nil {
+			log.Fatal("Erro ao carregar arquivos .env")
+		}
 	}
 
-	StringConexaoBanco = fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True&loc=Local",
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_ADDR"),
-		os.Getenv("DB_DATABASE"),
-	)
+	Port = os.Getenv("API_PORT")
+	if Port == "" {
+		Port = ":8080"
+	}
+
+	Cfg = mysql.Config{
+		User:                 os.Getenv("DB_USER"),
+		Passwd:               os.Getenv("DB_PASSWORD"),
+		Net:                  "tcp",
+		Addr:                 os.Getenv("DB_ADDR"),
+		DBName:               os.Getenv("DB_DATABASE"),
+		AllowNativePasswords: true,
+	}
 }
