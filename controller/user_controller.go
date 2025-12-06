@@ -2,70 +2,131 @@ package controller
 
 import (
 	"Api-Aula1/model"
+	"Api-Aula1/persistency"
 	"Api-Aula1/repository"
+	"Api-Aula1/responses"
 	"encoding/json"
+	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
-	var user model.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Erro ao decodificar JSON", http.StatusBadRequest)
+	corpoRequisicao, erro := io.ReadAll(r.Body)
+	if erro != nil {
+		responses.Err(w, http.StatusUnprocessableEntity, erro)
 		return
 	}
 
-	if !user.ValidateCPF() {
-		http.Error(w, "CPF inválido", http.StatusBadRequest)
+	var usuario model.User
+	if erro = json.Unmarshal(corpoRequisicao, &usuario); erro != nil {
+		responses.Err(w, http.StatusBadRequest, erro)
 		return
 	}
 
-	createdUser := repository.Create(user)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(createdUser)
+	if erro = usuario.Prepare("cadastro"); erro != nil {
+		responses.Err(w, http.StatusBadRequest, erro)
+		return
+	}
+
+	db, erro := persistency.Connect()
+	if erro != nil {
+		responses.Err(w, http.StatusInternalServerError, erro)
+		return
+	}
+	defer db.Close()
+
+	repositorio := repository.NewUsersRepo(db)
+	usuario.ID, erro = repositorio.Create(usuario)
+	if erro != nil {
+		responses.Err(w, http.StatusInternalServerError, erro)
+		return
+	}
+
+	responses.JSON(w, http.StatusCreated, usuario)
 }
 
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
-	users := repository.FindAll()
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+	db, erro := persistency.Connect()
+	if erro != nil {
+		responses.Err(w, http.StatusInternalServerError, erro)
+		return
+	}
+	defer db.Close()
+
+	repositorio := repository.NewUsersRepo(db)
+	usuarios, erro := repositorio.FindAll()
+	if erro != nil {
+		responses.Err(w, http.StatusInternalServerError, erro)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, usuarios)
 }
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	var user model.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Erro ao decodificar JSON", http.StatusBadRequest)
+	parametros := mux.Vars(r)
+	usuarioID, erro := strconv.ParseUint(parametros["id"], 10, 64)
+	if erro != nil {
+		responses.Err(w, http.StatusBadRequest, erro)
 		return
 	}
 
-	if user.CPF != "" && !user.ValidateCPF() {
-		http.Error(w, "CPF inválido", http.StatusBadRequest)
+	corpoRequisicao, erro := io.ReadAll(r.Body)
+	if erro != nil {
+		responses.Err(w, http.StatusUnprocessableEntity, erro)
 		return
 	}
 
-	updatedUser, err := repository.Update(id, user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+	var usuario model.User
+	if erro = json.Unmarshal(corpoRequisicao, &usuario); erro != nil {
+		responses.Err(w, http.StatusBadRequest, erro)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(updatedUser)
+	if erro = usuario.Prepare("edicao"); erro != nil {
+		responses.Err(w, http.StatusBadRequest, erro)
+		return
+	}
+
+	db, erro := persistency.Connect()
+	if erro != nil {
+		responses.Err(w, http.StatusInternalServerError, erro)
+		return
+	}
+	defer db.Close()
+
+	repositorio := repository.NewUsersRepo(db)
+	if erro = repositorio.Update(usuarioID, usuario); erro != nil {
+		responses.Err(w, http.StatusInternalServerError, erro)
+		return
+	}
+
+	responses.JSON(w, http.StatusNoContent, nil)
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	if err := repository.Delete(id); err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+	parametros := mux.Vars(r)
+	usuarioID, erro := strconv.ParseUint(parametros["id"], 10, 64)
+	if erro != nil {
+		responses.Err(w, http.StatusBadRequest, erro)
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	db, erro := persistency.Connect()
+	if erro != nil {
+		responses.Err(w, http.StatusInternalServerError, erro)
+		return
+	}
+	defer db.Close()
+
+	repositorio := repository.NewUsersRepo(db)
+	if erro = repositorio.Delete(usuarioID); erro != nil {
+		responses.Err(w, http.StatusInternalServerError, erro)
+		return
+	}
+
+	responses.JSON(w, http.StatusNoContent, nil)
 }
