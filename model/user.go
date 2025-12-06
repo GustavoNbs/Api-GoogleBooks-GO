@@ -1,6 +1,7 @@
 package model
 
 import (
+	"Api-Aula1/security"
 	"Api-Aula1/utils"
 	"errors"
 	"strings"
@@ -51,6 +52,15 @@ func (u *User) format(step string) error {
 	u.CPF = strings.TrimSpace(u.CPF)
 
 	u.Name = strings.ToLower(u.Name)
+	u.Email = strings.ToLower(u.Email)
+
+	if step == "cadastro" {
+		senhaComHash, erro := security.Hash(u.Password)
+		if erro != nil {
+			return erro
+		}
+		u.Password = string(senhaComHash)
+	}
 
 	return nil
 }
