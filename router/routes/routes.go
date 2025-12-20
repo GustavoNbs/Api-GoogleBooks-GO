@@ -63,4 +63,16 @@ var rotasLivros = []Rota{
 		Funcao:             handler.HandleSearch,
 		RequerAutenticacao: true,
 	},
+	{
+		URI:                "/books/{bookId}",
+		Metodo:             http.MethodPut,
+		Funcao:             controller.AtualizarLivro,
+		RequerAutenticacao: true,
+	},
+	{
+		URI:                "/books/{bookId}",
+		Metodo:             http.MethodDelete,
+		Funcao:             controller.DeletarLivro,
+		RequerAutenticacao: true,
+	},
 }
