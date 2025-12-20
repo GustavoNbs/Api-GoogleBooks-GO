@@ -3,6 +3,7 @@ package routes
 import (
 	"Api-Aula1/controller"
 	"Api-Aula1/handler"
+	"Api-Aula1/middlewares"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -20,7 +21,15 @@ func Configurar(r *mux.Router) *mux.Router {
 	rotas = append(rotas, rotasLivros...)
 
 	for _, rota := range rotas {
-		r.HandleFunc(rota.URI, rota.Funcao).Methods(rota.Metodo)
+		if rota.RequerAutenticacao {
+			r.HandleFunc(rota.URI,
+				middlewares.Logger(middlewares.Autenticar(rota.Funcao)),
+			).Methods(rota.Metodo)
+		} else {
+			r.HandleFunc(rota.URI,
+				middlewares.Logger(rota.Funcao),
+			).Methods(rota.Metodo)
+		}
 	}
 
 	return r
@@ -28,31 +37,30 @@ func Configurar(r *mux.Router) *mux.Router {
 
 var rotasUsuarios = []Rota{
 	{
-		URI:    "/users",
-		Metodo: http.MethodPost,
-		Funcao: controller.CreateUser,
+		URI:                "/users",
+		Metodo:             http.MethodPost,
+		Funcao:             controller.CreateUser,
+		RequerAutenticacao: false,
 	},
 	{
-		URI:    "/users",
-		Metodo: http.MethodGet,
-		Funcao: controller.GetAllUsers,
+		URI:                "/login",
+		Metodo:             http.MethodPost,
+		Funcao:             controller.Login,
+		RequerAutenticacao: false,
 	},
 	{
-		URI:    "/users/{id}",
-		Metodo: http.MethodPut,
-		Funcao: controller.UpdateUser,
-	},
-	{
-		URI:    "/users/{id}",
-		Metodo: http.MethodDelete,
-		Funcao: controller.DeleteUser,
+		URI:                "/users",
+		Metodo:             http.MethodGet,
+		Funcao:             controller.GetAllUsers,
+		RequerAutenticacao: true,
 	},
 }
 
 var rotasLivros = []Rota{
 	{
-		URI:    "/books/search",
-		Metodo: http.MethodGet,
-		Funcao: handler.HandleSearch,
+		URI:                "/books/search",
+		Metodo:             http.MethodGet,
+		Funcao:             handler.HandleSearch,
+		RequerAutenticacao: true,
 	},
 }

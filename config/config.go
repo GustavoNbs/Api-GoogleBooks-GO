@@ -47,4 +47,6 @@ func LoadEnv() {
 		DBName:               os.Getenv("DB_DATABASE"),
 		AllowNativePasswords: true,
 	}
+
+	SecretKey = []byte(os.Getenv("SECRET_KEY"))
 }

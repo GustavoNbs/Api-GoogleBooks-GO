@@ -89,3 +89,19 @@ func (repo UsersRepo) Delete(ID uint64) error {
 
 	return nil
 }
+
+func (repo UsersRepo) BuscarPorEmail(email string) (model.User, error) {
+	linha, erro := repo.db.Query("SELECT id, password FROM users WHERE email = ?", email)
+	if erro != nil {
+		return model.User{}, erro
+	}
+	defer linha.Close()
+
+	var usuario model.User
+	if linha.Next() {
+		if erro = linha.Scan(&usuario.ID, &usuario.Password); erro != nil {
+			return model.User{}, erro
+		}
+	}
+	return usuario, nil
+}
